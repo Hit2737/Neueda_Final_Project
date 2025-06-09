@@ -43,5 +43,12 @@
             "shares": 2,
             "cost_price": 34.0
         }
+    ],
+    "Id": [
+        {
+            "symbol": "GOOGL",
+            "shares": 2,
+            "cost_price": 2.0
+        }
     ]
 }
