@@ -9,8 +9,10 @@ HISTORICAL_PRICES = {
     "MSFT": [300, 305, 310, 315, 320, 325, 330, 335, 340, 345, 350, 355, 360],
     # Add more symbols as needed
 }
+load_dotenv() 
+
 client = OpenAI(
-    api_key="your-openai-api-key",  # Replace this with your real API key
+    api_key=os.getenv("OPENAI_API_KEY"),
 )
 
 # File to store user portfolios
