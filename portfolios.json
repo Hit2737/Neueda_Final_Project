@@ -10,5 +10,45 @@
             "shares": 10,
             "cost_price": 80.0
         }
+    ],
+    "Idhant": [
+        {
+            "symbol": "AAPL",
+            "shares": 33,
+            "cost_price": 88.0
+        },
+        {
+            "symbol": "GOOGL",
+            "shares": 43,
+            "cost_price": 32.0
+        }
+    ],
+    "Idhant2": [
+        {
+            "symbol": "GOOGL",
+            "shares": 31,
+            "cost_price": 100.0
+        }
+    ],
+    "Idhant3": [
+        {
+            "symbol": "GOOGL",
+            "shares": 2,
+            "cost_price": 25.0
+        }
+    ],
+    "Idhant4": [
+        {
+            "symbol": "GOOGL",
+            "shares": 2,
+            "cost_price": 34.0
+        }
+    ],
+    "Id": [
+        {
+            "symbol": "GOOGL",
+            "shares": 2,
+            "cost_price": 2.0
+        }
     ]
 }

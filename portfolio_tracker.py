@@ -4,10 +4,19 @@ from openai import OpenAI
 from dotenv import load_dotenv
 
 # Initialize OpenAI client
+# Initialize OpenAI client
+HISTORICAL_PRICES = {
+    "AAPL": [150, 155, 160, 162, 158, 165, 170, 175, 180, 185, 190, 195, 200],
+    "GOOGL": [2700, 2750, 2800, 2850, 2900, 2950, 3000, 3050, 3100, 3150, 3200, 3250, 3300],
+    "MSFT": [300, 305, 310, 315, 320, 325, 330, 335, 340, 345, 350, 355, 360],
+    # Add more symbols as needed
+}
 load_dotenv()
+
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY"),
 )
+
 
 # File to store user portfolios
 PORTFOLIO_FILE = "portfolios.json"
@@ -129,6 +138,17 @@ def update_portfolio(portfolio):
 
 
 # 🔹 Calculate & Show Portfolio Performance
+def predict_future_price(prices, periods):
+    import numpy as np
+    if not prices or len(prices) < 2:
+        raise ValueError("Not enough historical data to predict.")
+    x = np.arange(len(prices))
+    y = np.array(prices)
+    coeffs = np.polyfit(x, y, 1)  # Linear fit
+    future_x = len(prices) + periods
+    predicted_price = coeffs[0] * future_x + coeffs[1]
+    return predicted_price
+    
 def calculate_portfolio_value(portfolio):
     total_invested = 0
     total_current = 0
@@ -174,6 +194,37 @@ def calculate_portfolio_value(portfolio):
     # Generate LLM summary
     generate_ai_summary(portfolio, overall_gain)
 
+
+def predict_portfolio_returns(portfolio):
+    print("\n🔮 Predicted Returns (Simple Linear Model):")
+    periods_map = {
+        "1 year":  12,    # 12 months
+        "3 years": 36,    # 36 months
+        "5 years": 60     # 60 months
+    }
+    total_predicted = {k: 0 for k in periods_map}
+    total_invested = 0
+
+    for stock in portfolio:
+        symbol = stock["symbol"]
+        shares = stock["shares"]
+        cost = stock["cost_price"]
+        history = HISTORICAL_PRICES[symbol]
+        invested = shares * cost
+        total_invested += invested
+
+        print(f"\n{symbol}:")
+        for label, periods in periods_map.items():
+            predicted_price = predict_future_price(history, periods)
+            predicted_value = shares * predicted_price
+            gain = predicted_value - invested
+            print(f"  {label}: Predicted price ${predicted_price:.2f}, Predicted gain/loss: ${gain:.2f}")
+            total_predicted[label] += predicted_value
+
+    print("\n💼 Portfolio Predicted Summary:")
+    for label in periods_map:
+        overall_gain = total_predicted[label] - total_invested
+        print(f"  {label}: Predicted overall gain/loss: ${overall_gain:.2f}")
 
 # 🔹 OpenAI Summary Generator
 def generate_ai_summary(portfolio, total_gain):
@@ -226,6 +277,7 @@ def main():
 
     if portfolio:
         calculate_portfolio_value(portfolio)
+        predict_portfolio_returns(portfolio)
     else:
         print("⚠️  No valid stock entries provided.")
 
