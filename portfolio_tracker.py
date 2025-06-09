@@ -1,7 +1,9 @@
 import json
 import os
 from openai import OpenAI
+from dotenv import load_dotenv
 
+# Initialize OpenAI client
 # Initialize OpenAI client
 HISTORICAL_PRICES = {
     "AAPL": [150, 155, 160, 162, 158, 165, 170, 175, 180, 185, 190, 195, 200],
@@ -9,11 +11,12 @@ HISTORICAL_PRICES = {
     "MSFT": [300, 305, 310, 315, 320, 325, 330, 335, 340, 345, 350, 355, 360],
     # Add more symbols as needed
 }
-load_dotenv() 
+load_dotenv()
 
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY"),
 )
+
 
 # File to store user portfolios
 PORTFOLIO_FILE = "portfolios.json"
