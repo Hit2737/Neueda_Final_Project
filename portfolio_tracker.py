@@ -2,40 +2,32 @@ import json
 import os
 from openai import OpenAI
 from dotenv import load_dotenv
+import yfinance as yf
 
-# Initialize OpenAI client
-# Initialize OpenAI client
-HISTORICAL_PRICES = {
-    "AAPL": [150, 155, 160, 162, 158, 165, 170, 175, 180, 185, 190, 195, 200],
-    "GOOGL": [2700, 2750, 2800, 2850, 2900, 2950, 3000, 3050, 3100, 3150, 3200, 3250, 3300],
-    "MSFT": [300, 305, 310, 315, 320, 325, 330, 335, 340, 345, 350, 355, 360],
-    # Add more symbols as needed
-}
 load_dotenv()
 
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY"),
 )
 
-
-# File to store user portfolios
 PORTFOLIO_FILE = "portfolios.json"
 
-# Dummy historical and current stock prices
-HISTORICAL_PRICES = {
-    "AAPL": [165, 170, 172, 174, 175],
-    "TSLA": [710, 705, 700, 695, 690],
-    "GOOGL": [2700, 2720, 2750, 2780, 2800],
-    "MSFT": [310, 315, 320, 325, 330]
-}
+# 🔹 Fetch prices using yfinance
+def fetch_current_price(symbol):
+    try:
+        stock = yf.Ticker(symbol)
+        price = stock.history(period="1d")["Close"].iloc[-1]
+        return float(price)
+    except Exception:
+        return None
 
-CURRENT_PRICES = {
-    "AAPL": HISTORICAL_PRICES["AAPL"][-1],
-    "TSLA": HISTORICAL_PRICES["TSLA"][-1],
-    "GOOGL": HISTORICAL_PRICES["GOOGL"][-1],
-    "MSFT": HISTORICAL_PRICES["MSFT"][-1]
-}
-
+def fetch_historical_prices(symbol, days=5):
+    try:
+        stock = yf.Ticker(symbol)
+        hist = stock.history(period=f"{days}d")
+        return [float(p) for p in hist["Close"].tolist()]
+    except Exception:
+        return []
 
 # 🔹 Load/Save Portfolios
 def load_all_portfolios():
@@ -48,7 +40,6 @@ def save_all_portfolios(data):
     with open(PORTFOLIO_FILE, "w") as f:
         json.dump(data, f, indent=4)
 
-
 # 🔹 Get portfolio from user
 def get_user_portfolio():
     print("📈 Let's build your portfolio!\n")
@@ -58,8 +49,8 @@ def get_user_portfolio():
         symbol = input("Enter stock symbol (or 'done' to finish): ").upper()
         if symbol == 'DONE':
             break
-        if symbol not in CURRENT_PRICES:
-            print(f"⚠️  {symbol} not found. Try AAPL, TSLA, GOOGL, MSFT.")
+        if fetch_current_price(symbol) is None:
+            print(f"⚠️  {symbol} not found or unavailable.")
             continue
         try:
             shares = int(input(f"Enter number of shares for {symbol}: "))
@@ -75,7 +66,6 @@ def get_user_portfolio():
 
     return portfolio
 
-
 # 🔹 Update Portfolio (Buy/Sell)
 def update_portfolio(portfolio):
     while True:
@@ -87,8 +77,8 @@ def update_portfolio(portfolio):
             continue
 
         symbol = input("Enter stock symbol: ").upper()
-        if symbol not in CURRENT_PRICES:
-            print(f"⚠️  {symbol} not found. Try AAPL, TSLA, GOOGL, MSFT.")
+        if fetch_current_price(symbol) is None:
+            print(f"⚠️  {symbol} not found or unavailable.")
             continue
 
         try:
@@ -136,7 +126,6 @@ def update_portfolio(portfolio):
                 print(f"⚠️  You do not own any shares of {symbol}.")
     return portfolio
 
-
 # 🔹 Calculate & Show Portfolio Performance
 def predict_future_price(prices, periods):
     import numpy as np
@@ -148,7 +137,7 @@ def predict_future_price(prices, periods):
     future_x = len(prices) + periods
     predicted_price = coeffs[0] * future_x + coeffs[1]
     return predicted_price
-    
+
 def calculate_portfolio_value(portfolio):
     total_invested = 0
     total_current = 0
@@ -160,7 +149,10 @@ def calculate_portfolio_value(portfolio):
         symbol = stock["symbol"]
         shares = stock["shares"]
         cost = stock["cost_price"]
-        current = CURRENT_PRICES[symbol]
+        current = fetch_current_price(symbol)
+        if current is None:
+            print(f"⚠️  Could not fetch current price for {symbol}. Skipping.")
+            continue
 
         invested_value = shares * cost
         current_value = shares * current
@@ -180,9 +172,12 @@ def calculate_portfolio_value(portfolio):
         print(f"  ➤ {status.upper()}: ${gain_loss:.2f}")
 
         # Historical trend
-        history = HISTORICAL_PRICES[symbol]
-        trend = "↑" if history[-1] > history[0] else "↓"
-        print(f"  5-Day Trend: {trend} ({' → '.join([str(p) for p in history])})\n")
+        history = fetch_historical_prices(symbol, days=5)
+        if history:
+            trend = "↑" if history[-1] > history[0] else "↓"
+            print(f"  5-Day Trend: {trend} ({' → '.join([str(p) for p in history])})\n")
+        else:
+            print("  5-Day Trend: Data unavailable\n")
 
     overall_gain = total_current - total_invested
 
@@ -193,7 +188,6 @@ def calculate_portfolio_value(portfolio):
 
     # Generate LLM summary
     generate_ai_summary(portfolio, overall_gain)
-
 
 def predict_portfolio_returns(portfolio):
     print("\n🔮 Predicted Returns (Simple Linear Model):")
@@ -209,11 +203,14 @@ def predict_portfolio_returns(portfolio):
         symbol = stock["symbol"]
         shares = stock["shares"]
         cost = stock["cost_price"]
-        history = HISTORICAL_PRICES[symbol]
+        history = fetch_historical_prices(symbol, days=5)
         invested = shares * cost
         total_invested += invested
 
         print(f"\n{symbol}:")
+        if not history:
+            print("  Historical data unavailable.")
+            continue
         for label, periods in periods_map.items():
             predicted_price = predict_future_price(history, periods)
             predicted_value = shares * predicted_price
@@ -233,7 +230,7 @@ def generate_ai_summary(portfolio, total_gain):
         symbol = stock["symbol"]
         shares = stock["shares"]
         cost = stock["cost_price"]
-        current = CURRENT_PRICES[symbol]
+        current = fetch_current_price(symbol)
         prompt += f"{symbol}: {shares} shares, bought at ${cost}, current price ${current}\n"
 
     prompt += f"\nTotal portfolio gain/loss: ${total_gain:.2f}\n"
@@ -253,7 +250,6 @@ def generate_ai_summary(portfolio, total_gain):
         print(summary)
     except Exception as e:
         print(f"\n⚠️ OpenAI API error: {e}")
-
 
 # 🔹 Main Entry Point
 def main():
@@ -280,7 +276,6 @@ def main():
         predict_portfolio_returns(portfolio)
     else:
         print("⚠️  No valid stock entries provided.")
-
 
 # Run script
 if __name__ == "__main__":
