@@ -50,5 +50,12 @@
             "shares": 2,
             "cost_price": 2.0
         }
+    ],
+    "Htanshu": [
+        {
+            "symbol": "AAPL",
+            "shares": 20,
+            "cost_price": 222.0
+        }
     ]
 }
