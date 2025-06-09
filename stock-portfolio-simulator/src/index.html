@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Portfolio Simulator</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <div id="app">
+        <h1>Stock Portfolio Simulator</h1>
+
+        <!-- Main Container -->
+        <div class="container">
+            <!-- Portfolio Section -->
+            <div id="portfolio">
+                <h2>Your Portfolio</h2>
+                <ul id="stock-list"></ul>
+                <h3>Portfolio Value: <span id="total-value">$0</span></h3>
+            </div>
+
+            <!-- Transaction History Section -->
+            <div id="transaction-history">
+                <h2>Transaction History</h2>
+                <ul id="transaction-list"></ul>
+            </div>
+        </div>
+
+        <!-- Search and Add Stock Section -->
+        <div id="search-stock">
+            <h2>Search Stock</h2>
+            <input type="text" id="stock-search" placeholder="Search Stock Symbol">
+            <div id="search-results"></div>
+        </div>
+    </div>
+   
+    <script src="scripts/app.js"></script>
+</body>
+</html>
