@@ -6,9 +6,14 @@
             "cost_price": 100.0
         },
         {
+            "symbol": "MSFT",
+            "shares": 5,
+            "cost_price": 100.0
+        },
+        {
             "symbol": "GOOGL",
             "shares": 10,
-            "cost_price": 80.0
+            "cost_price": 150.0
         }
     ],
     "Idhant": [

@@ -14,18 +14,36 @@ PORTFOLIO_FILE = "portfolios.json"
 
 # 🔹 Fetch prices using yfinance
 def fetch_current_price(symbol):
+    import warnings
+    import yfinance as yf
     try:
-        stock = yf.Ticker(symbol)
-        price = stock.history(period="1d")["Close"].iloc[-1]
-        return float(price)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            stock = yf.Ticker(symbol)
+            price = stock.history(period="1d")['Close']
+            if price.empty:
+                # Try a longer period if 1d fails
+                price = stock.history(period="7d")['Close']
+            if price.empty:
+                return None
+            return float(price.iloc[-1])
     except Exception:
         return None
 
-def fetch_historical_prices(symbol, days=5):
+def fetch_historical_prices(symbol, days=30):
+    import warnings
+    import yfinance as yf
     try:
-        stock = yf.Ticker(symbol)
-        hist = stock.history(period=f"{days}d")
-        return [float(p) for p in hist["Close"].tolist()]
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            stock = yf.Ticker(symbol)
+            hist = stock.history(period=f"{days}d")['Close']
+            if hist.empty:
+                # Try a longer period if days fails
+                hist = stock.history(period="1mo")['Close']
+            if hist.empty:
+                return []
+            return [float(p) for p in hist.tolist()]
     except Exception:
         return []
 
@@ -128,14 +146,23 @@ def update_portfolio(portfolio):
 
 # 🔹 Calculate & Show Portfolio Performance
 def predict_future_price(prices, periods):
+    from prophet import Prophet
+    import pandas as pd
     import numpy as np
-    if not prices or len(prices) < 2:
-        raise ValueError("Not enough historical data to predict.")
-    x = np.arange(len(prices))
-    y = np.array(prices)
-    coeffs = np.polyfit(x, y, 1)  # Linear fit
-    future_x = len(prices) + periods
-    predicted_price = coeffs[0] * future_x + coeffs[1]
+    if not prices or len(prices) < 10:
+        raise ValueError("Not enough historical data to predict (need at least 10 days).")
+    # Create a DataFrame for Prophet
+    df = pd.DataFrame({
+        'ds': pd.date_range(end=pd.Timestamp.today(), periods=len(prices)),
+        'y': prices
+    })
+    model = Prophet(daily_seasonality=False, yearly_seasonality=False, weekly_seasonality=False)
+    model.fit(df)
+    # Forecast into the future
+    future = model.make_future_dataframe(periods=periods)
+    forecast = model.predict(future)
+    # Get the predicted price at the last period
+    predicted_price = forecast.iloc[-1]['yhat']
     return predicted_price
 
 def calculate_portfolio_value(portfolio):
@@ -190,33 +217,38 @@ def calculate_portfolio_value(portfolio):
     generate_ai_summary(portfolio, overall_gain)
 
 def predict_portfolio_returns(portfolio):
-    print("\n🔮 Predicted Returns (Simple Linear Model):")
+    print("\n🔮 Predicted Returns (Prophet Model):")
     periods_map = {
         "1 year":  12,    # 12 months
         "3 years": 36,    # 36 months
         "5 years": 60     # 60 months
     }
     total_predicted = {k: 0 for k in periods_map}
+    print(total_predicted)
     total_invested = 0
 
     for stock in portfolio:
         symbol = stock["symbol"]
         shares = stock["shares"]
         cost = stock["cost_price"]
-        history = fetch_historical_prices(symbol, days=5)
+        # Fetch at least 30 days of history for Prophet
+        history = fetch_historical_prices(symbol, days=30)
         invested = shares * cost
         total_invested += invested
 
         print(f"\n{symbol}:")
-        if not history:
-            print("  Historical data unavailable.")
+        if not history or len(history) < 10:
+            print("  Not enough historical data for prediction (need at least 10 days).")
             continue
         for label, periods in periods_map.items():
-            predicted_price = predict_future_price(history, periods)
-            predicted_value = shares * predicted_price
-            gain = predicted_value - invested
-            print(f"  {label}: Predicted price ${predicted_price:.2f}, Predicted gain/loss: ${gain:.2f}")
-            total_predicted[label] += predicted_value
+            try:
+                predicted_price = predict_future_price(history, periods)
+                predicted_value = shares * predicted_price
+                gain = predicted_value - invested
+                print(f"  {label}: Predicted price ${predicted_price:.2f}, Predicted gain/loss: ${gain:.2f}")
+                total_predicted[label] += predicted_value
+            except Exception as e:
+                print(f"  {label}: Prediction error: {e}")
 
     print("\n💼 Portfolio Predicted Summary:")
     for label in periods_map:
