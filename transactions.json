@@ -1,0 +1,11 @@
+{
+    "Hitanshu": [
+        {
+            "action": "buy",
+            "symbol": "AAPL",
+            "shares": 19,
+            "price": 21.0,
+            "datetime": "2025-06-09 13:10:16"
+        }
+    ]
+}
