@@ -6,6 +6,27 @@
             "shares": 19,
             "price": 21.0,
             "datetime": "2025-06-09 13:10:16"
+        },
+        {
+            "action": "buy",
+            "symbol": "AAPL",
+            "shares": 22,
+            "price": 22.0,
+            "datetime": "2025-06-09 13:12:49"
+        },
+        {
+            "action": "buy",
+            "symbol": "AAPL",
+            "shares": 11,
+            "price": 111.0,
+            "datetime": "2025-06-09 13:12:59"
+        },
+        {
+            "action": "buy",
+            "symbol": "AAPL",
+            "shares": 20,
+            "price": 200.0,
+            "datetime": "2025-06-09 13:13:20"
         }
     ]
 }
