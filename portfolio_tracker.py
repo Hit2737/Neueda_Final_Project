@@ -1,10 +1,12 @@
 import json
 import os
 from openai import OpenAI
+from dotenv import load_dotenv
 
 # Initialize OpenAI client
+load_dotenv()
 client = OpenAI(
-    api_key="your-openai-api-key",  # Replace this with your real API key
+    api_key=os.getenv("OPENAI_API_KEY"),
 )
 
 # File to store user portfolios
